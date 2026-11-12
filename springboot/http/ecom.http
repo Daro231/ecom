@@ -1,0 +1,739 @@
+# ecom API - REST Client (VS Code) / IntelliJ HTTP Client
+# Run the requests from top to bottom. Seed accounts: admin@ecom.com / Admin@123, staff@ecom.com / Staff@123, customer@ecom.com / Customer@123
+
+@baseUrl = http://localhost:8080
+@json = application/json
+
+# (after logging in, tokens are read from the login responses)
+
+
+###############################################################
+# 01 Auth
+###############################################################
+
+### Register (new random customer)
+# @name register
+POST {{baseUrl}}/api/v1/auth/register HTTP/1.1
+Content-Type: {{json}}
+
+{
+  "fullName": "Postman User",
+  "email": "postman{{$timestamp}}@test.com",
+  "password": "Passw0rd!",
+  "phone": "012345678"
+}
+
+### Login - customer (saves token)
+# @name loginCustomer
+POST {{baseUrl}}/api/v1/auth/login HTTP/1.1
+Content-Type: {{json}}
+
+{
+  "email": "customer@ecom.com",
+  "password": "Customer@123"
+}
+
+### Login - admin (saves adminToken)
+# @name loginAdmin
+POST {{baseUrl}}/api/v1/auth/login HTTP/1.1
+Content-Type: {{json}}
+
+{
+  "email": "admin@ecom.com",
+  "password": "Admin@123"
+}
+
+### Login - staff (saves staffToken)
+# @name loginStaff
+POST {{baseUrl}}/api/v1/auth/login HTTP/1.1
+Content-Type: {{json}}
+
+{
+  "email": "staff@ecom.com",
+  "password": "Staff@123"
+}
+
+
+###############################################################
+# 02 Profile & Addresses
+###############################################################
+
+### Get my profile
+GET {{baseUrl}}/api/v1/users/me HTTP/1.1
+Authorization: Bearer {{loginCustomer.response.body.$.data.accessToken}}
+
+### Update my profile
+PUT {{baseUrl}}/api/v1/users/me HTTP/1.1
+Authorization: Bearer {{loginCustomer.response.body.$.data.accessToken}}
+Content-Type: {{json}}
+
+{
+  "fullName": "Demo Customer",
+  "phone": "012345678"
+}
+
+### Change password (new user from Register)
+PUT {{baseUrl}}/api/v1/users/me/password HTTP/1.1
+Authorization: Bearer {{register.response.body.$.data.accessToken}}
+Content-Type: {{json}}
+
+{
+  "currentPassword": "Passw0rd!",
+  "newPassword": "NewPassw0rd!"
+}
+
+### List my addresses (saves addressId)
+# @name addresses
+GET {{baseUrl}}/api/v1/users/me/addresses HTTP/1.1
+Authorization: Bearer {{loginCustomer.response.body.$.data.accessToken}}
+
+### Add address (saves newAddressId)
+# @name newAddress
+POST {{baseUrl}}/api/v1/users/me/addresses HTTP/1.1
+Authorization: Bearer {{loginCustomer.response.body.$.data.accessToken}}
+Content-Type: {{json}}
+
+{
+  "receiverName": "Sok Dara",
+  "phone": "012111222",
+  "line1": "No. 5, Street 63, Boeung Keng Kang",
+  "city": "Phnom Penh",
+  "isDefault": false
+}
+
+### Update address
+PUT {{baseUrl}}/api/v1/users/me/addresses/{{newAddress.response.body.$.data.id}} HTTP/1.1
+Authorization: Bearer {{loginCustomer.response.body.$.data.accessToken}}
+Content-Type: {{json}}
+
+{
+  "receiverName": "Sok Dara",
+  "phone": "012111222",
+  "line1": "No. 9, Street 63",
+  "city": "Phnom Penh",
+  "isDefault": false
+}
+
+### Set address as default
+PATCH {{baseUrl}}/api/v1/users/me/addresses/{{newAddress.response.body.$.data.id}}/default HTTP/1.1
+Authorization: Bearer {{loginCustomer.response.body.$.data.accessToken}}
+
+### Make original address default again
+PATCH {{baseUrl}}/api/v1/users/me/addresses/{{addresses.response.body.$.data[0].id}}/default HTTP/1.1
+Authorization: Bearer {{loginCustomer.response.body.$.data.accessToken}}
+
+### Delete address
+DELETE {{baseUrl}}/api/v1/users/me/addresses/{{newAddress.response.body.$.data.id}} HTTP/1.1
+Authorization: Bearer {{loginCustomer.response.body.$.data.accessToken}}
+
+
+###############################################################
+# 03 Catalog (public)
+###############################################################
+
+### Search products (laptop, 500-1000, Dell, RAM 16)
+GET {{baseUrl}}/api/v1/products?keyword=laptop&minPrice=500&maxPrice=1000&brandId=1&ram=16&sort=price_asc&page=0&size=12 HTTP/1.1
+
+### List products (newest, saves productId)
+# @name products
+GET {{baseUrl}}/api/v1/products?sort=newest&inStock=true&size=12 HTTP/1.1
+
+### Get product by id
+GET {{baseUrl}}/api/v1/products/{{products.response.body.$.data.content[0].id}} HTTP/1.1
+
+### Get product by slug
+GET {{baseUrl}}/api/v1/products/slug/{{products.response.body.$.data.content[0].slug}} HTTP/1.1
+
+### List categories (saves categoryId)
+GET {{baseUrl}}/api/v1/categories HTTP/1.1
+
+### List brands (saves brandId)
+GET {{baseUrl}}/api/v1/brands HTTP/1.1
+
+### List shipping methods
+GET {{baseUrl}}/api/v1/shipping/methods HTTP/1.1
+
+
+###############################################################
+# 04 Cart
+###############################################################
+
+### Get cart
+GET {{baseUrl}}/api/v1/cart HTTP/1.1
+Authorization: Bearer {{loginCustomer.response.body.$.data.accessToken}}
+
+### Add item (saves itemId)
+# @name addItem
+POST {{baseUrl}}/api/v1/cart/items HTTP/1.1
+Authorization: Bearer {{loginCustomer.response.body.$.data.accessToken}}
+Content-Type: {{json}}
+
+{
+  "productId": "{{products.response.body.$.data.content[0].id}}",
+  "quantity": 1
+}
+
+### Update item quantity
+PUT {{baseUrl}}/api/v1/cart/items/{{addItem.response.body.$.data.items[0].id}} HTTP/1.1
+Authorization: Bearer {{loginCustomer.response.body.$.data.accessToken}}
+Content-Type: {{json}}
+
+{
+  "quantity": 2
+}
+
+### Apply coupon WELCOME10 (preview)
+POST {{baseUrl}}/api/v1/cart/apply-coupon HTTP/1.1
+Authorization: Bearer {{loginCustomer.response.body.$.data.accessToken}}
+Content-Type: {{json}}
+
+{
+  "code": "WELCOME10",
+  "shippingMethod": "STANDARD"
+}
+
+### Remove item
+DELETE {{baseUrl}}/api/v1/cart/items/{{addItem.response.body.$.data.items[0].id}} HTTP/1.1
+Authorization: Bearer {{loginCustomer.response.body.$.data.accessToken}}
+
+### Add item again
+POST {{baseUrl}}/api/v1/cart/items HTTP/1.1
+Authorization: Bearer {{loginCustomer.response.body.$.data.accessToken}}
+Content-Type: {{json}}
+
+{
+  "productId": "{{products.response.body.$.data.content[0].id}}",
+  "quantity": 1
+}
+
+
+###############################################################
+# 05 Orders & Checkout
+###############################################################
+
+### Checkout - KHQR with WELCOME10 (saves orderNumber)
+# @name checkout1
+POST {{baseUrl}}/api/v1/orders/checkout HTTP/1.1
+Authorization: Bearer {{loginCustomer.response.body.$.data.accessToken}}
+Content-Type: {{json}}
+
+{
+  "addressId": "{{addresses.response.body.$.data[0].id}}",
+  "shippingMethod": "EXPRESS",
+  "paymentMethod": "KHQR",
+  "couponCode": "WELCOME10",
+  "note": "Please call before delivery"
+}
+
+### List my orders
+GET {{baseUrl}}/api/v1/orders?page=0&size=10 HTTP/1.1
+Authorization: Bearer {{loginCustomer.response.body.$.data.accessToken}}
+
+### Get order
+GET {{baseUrl}}/api/v1/orders/{{checkout1.response.body.$.data.orderNumber}} HTTP/1.1
+Authorization: Bearer {{loginCustomer.response.body.$.data.accessToken}}
+
+### Get invoice (JSON)
+GET {{baseUrl}}/api/v1/orders/{{checkout1.response.body.$.data.orderNumber}}/invoice HTTP/1.1
+Authorization: Bearer {{loginCustomer.response.body.$.data.accessToken}}
+
+### Get tracking
+GET {{baseUrl}}/api/v1/orders/{{checkout1.response.body.$.data.orderNumber}}/tracking HTTP/1.1
+Authorization: Bearer {{loginCustomer.response.body.$.data.accessToken}}
+
+### Add item for second order
+POST {{baseUrl}}/api/v1/cart/items HTTP/1.1
+Authorization: Bearer {{loginCustomer.response.body.$.data.accessToken}}
+Content-Type: {{json}}
+
+{
+  "productId": "{{products.response.body.$.data.content[0].id}}",
+  "quantity": 1
+}
+
+### Checkout - COD (saves codOrderNumber)
+# @name checkout2
+POST {{baseUrl}}/api/v1/orders/checkout HTTP/1.1
+Authorization: Bearer {{loginCustomer.response.body.$.data.accessToken}}
+Content-Type: {{json}}
+
+{
+  "addressId": "{{addresses.response.body.$.data[0].id}}",
+  "shippingMethod": "STANDARD",
+  "paymentMethod": "CASH_ON_DELIVERY"
+}
+
+### Cancel the COD order
+POST {{baseUrl}}/api/v1/orders/{{checkout2.response.body.$.data.orderNumber}}/cancel HTTP/1.1
+Authorization: Bearer {{loginCustomer.response.body.$.data.accessToken}}
+Content-Type: {{json}}
+
+{
+  "reason": "Ordered by mistake"
+}
+
+
+###############################################################
+# 06 Payments
+###############################################################
+
+### Generate KHQR (mock or real Bakong, see data.mode)
+POST {{baseUrl}}/api/v1/payments/{{checkout1.response.body.$.data.orderNumber}}/khqr HTTP/1.1
+Authorization: Bearer {{loginCustomer.response.body.$.data.accessToken}}
+
+### Payment status (PENDING)
+GET {{baseUrl}}/api/v1/payments/{{checkout1.response.body.$.data.orderNumber}}/status HTTP/1.1
+Authorization: Bearer {{loginCustomer.response.body.$.data.accessToken}}
+
+### Gateway callback - PAID (mock mode only; 404 in bakong mode)
+POST {{baseUrl}}/api/v1/payments/callback HTTP/1.1
+Content-Type: {{json}}
+
+{
+  "transactionRef": "MOCK-{{$timestamp}}",
+  "orderNumber": "{{checkout1.response.body.$.data.orderNumber}}",
+  "status": "PAID"
+}
+
+### Payment status (PAID)
+GET {{baseUrl}}/api/v1/payments/{{checkout1.response.body.$.data.orderNumber}}/status HTTP/1.1
+Authorization: Bearer {{loginCustomer.response.body.$.data.accessToken}}
+
+### Order is now CONFIRMED
+GET {{baseUrl}}/api/v1/orders/{{checkout1.response.body.$.data.orderNumber}} HTTP/1.1
+Authorization: Bearer {{loginCustomer.response.body.$.data.accessToken}}
+
+### Admin: re-check payment with Bakong (400 in mock mode, 200 in bakong mode)
+POST {{baseUrl}}/api/v1/admin/payments/{{checkout1.response.body.$.data.orderNumber}}/recheck HTTP/1.1
+Authorization: Bearer {{loginAdmin.response.body.$.data.accessToken}}
+
+
+###############################################################
+# 07 Fulfilment (admin / staff)
+###############################################################
+
+### Admin: order -> PROCESSING
+PATCH {{baseUrl}}/api/v1/admin/orders/{{checkout1.response.body.$.data.orderNumber}}/status HTTP/1.1
+Authorization: Bearer {{loginStaff.response.body.$.data.accessToken}}
+Content-Type: {{json}}
+
+{
+  "status": "PROCESSING"
+}
+
+### Admin: ship with tracking number
+PATCH {{baseUrl}}/api/v1/admin/orders/{{checkout1.response.body.$.data.orderNumber}}/ship HTTP/1.1
+Authorization: Bearer {{loginStaff.response.body.$.data.accessToken}}
+Content-Type: {{json}}
+
+{
+  "trackingNumber": "KH-TRK-{{$timestamp}}"
+}
+
+### Admin: shipment -> OUT_FOR_DELIVERY
+PATCH {{baseUrl}}/api/v1/admin/shipments/{{checkout1.response.body.$.data.shipment.id}}/status HTTP/1.1
+Authorization: Bearer {{loginStaff.response.body.$.data.accessToken}}
+Content-Type: {{json}}
+
+{
+  "status": "OUT_FOR_DELIVERY"
+}
+
+### Admin: shipment -> DELIVERED (order DELIVERED)
+PATCH {{baseUrl}}/api/v1/admin/shipments/{{checkout1.response.body.$.data.shipment.id}}/status HTTP/1.1
+Authorization: Bearer {{loginStaff.response.body.$.data.accessToken}}
+Content-Type: {{json}}
+
+{
+  "status": "DELIVERED"
+}
+
+### Customer: tracking after delivery
+GET {{baseUrl}}/api/v1/orders/{{checkout1.response.body.$.data.orderNumber}}/tracking HTTP/1.1
+Authorization: Bearer {{loginCustomer.response.body.$.data.accessToken}}
+
+
+###############################################################
+# 08 Reviews
+###############################################################
+
+### Create review (delivered purchase, saves reviewId)
+# @name review
+POST {{baseUrl}}/api/v1/products/{{products.response.body.$.data.content[0].id}}/reviews HTTP/1.1
+Authorization: Bearer {{loginCustomer.response.body.$.data.accessToken}}
+Content-Type: {{json}}
+
+{
+  "rating": 5,
+  "comment": "Excellent laptop, fast delivery!"
+}
+
+### List product reviews (public)
+GET {{baseUrl}}/api/v1/products/{{products.response.body.$.data.content[0].id}}/reviews?page=0&size=10 HTTP/1.1
+
+### Update my review
+PUT {{baseUrl}}/api/v1/reviews/{{review.response.body.$.data.id}} HTTP/1.1
+Authorization: Bearer {{loginCustomer.response.body.$.data.accessToken}}
+Content-Type: {{json}}
+
+{
+  "rating": 4,
+  "comment": "Great, minor scratch on the lid"
+}
+
+### Product shows updated rating
+GET {{baseUrl}}/api/v1/products/{{products.response.body.$.data.content[0].id}} HTTP/1.1
+
+
+###############################################################
+# 09 Notifications
+###############################################################
+
+### List notifications (saves notificationId)
+# @name notifications
+GET {{baseUrl}}/api/v1/notifications?page=0&size=20 HTTP/1.1
+Authorization: Bearer {{loginCustomer.response.body.$.data.accessToken}}
+
+### Unread count
+GET {{baseUrl}}/api/v1/notifications/unread-count HTTP/1.1
+Authorization: Bearer {{loginCustomer.response.body.$.data.accessToken}}
+
+### Mark one as read
+PATCH {{baseUrl}}/api/v1/notifications/{{notifications.response.body.$.data.content[0].id}}/read HTTP/1.1
+Authorization: Bearer {{loginCustomer.response.body.$.data.accessToken}}
+
+### Mark all as read
+PATCH {{baseUrl}}/api/v1/notifications/read-all HTTP/1.1
+Authorization: Bearer {{loginCustomer.response.body.$.data.accessToken}}
+
+
+###############################################################
+# 10 Admin - Users
+###############################################################
+
+### List/search users
+GET {{baseUrl}}/api/v1/admin/users?keyword=postman&page=0&size=20 HTTP/1.1
+Authorization: Bearer {{loginAdmin.response.body.$.data.accessToken}}
+
+### Change role of registered user
+PATCH {{baseUrl}}/api/v1/admin/users/{{register.response.body.$.data.user.id}}/role HTTP/1.1
+Authorization: Bearer {{loginAdmin.response.body.$.data.accessToken}}
+Content-Type: {{json}}
+
+{
+  "role": "STAFF"
+}
+
+### Change role back to CUSTOMER
+PATCH {{baseUrl}}/api/v1/admin/users/{{register.response.body.$.data.user.id}}/role HTTP/1.1
+Authorization: Bearer {{loginAdmin.response.body.$.data.accessToken}}
+Content-Type: {{json}}
+
+{
+  "role": "CUSTOMER"
+}
+
+### Disable account
+PATCH {{baseUrl}}/api/v1/admin/users/{{register.response.body.$.data.user.id}}/enabled HTTP/1.1
+Authorization: Bearer {{loginAdmin.response.body.$.data.accessToken}}
+Content-Type: {{json}}
+
+{
+  "enabled": false
+}
+
+### Enable account
+PATCH {{baseUrl}}/api/v1/admin/users/{{register.response.body.$.data.user.id}}/enabled HTTP/1.1
+Authorization: Bearer {{loginAdmin.response.body.$.data.accessToken}}
+Content-Type: {{json}}
+
+{
+  "enabled": true
+}
+
+
+###############################################################
+# 11 Admin - Catalog
+###############################################################
+
+### List products (incl. inactive)
+GET {{baseUrl}}/api/v1/admin/products?page=0&size=20 HTTP/1.1
+Authorization: Bearer {{loginAdmin.response.body.$.data.accessToken}}
+
+### Create product (saves newProductId)
+# @name newProduct
+POST {{baseUrl}}/api/v1/admin/products HTTP/1.1
+Authorization: Bearer {{loginAdmin.response.body.$.data.accessToken}}
+Content-Type: {{json}}
+
+{
+  "sku": "PM-{{$timestamp}}",
+  "name": "Postman Test Laptop",
+  "description": "Created from the Postman collection",
+  "price": 999.99,
+  "categoryId": "1",
+  "brandId": "1",
+  "cpu": "Intel Core i7",
+  "ram": 16,
+  "storage": "512GB SSD",
+  "gpu": "Intel Iris Xe",
+  "screenSize": 14.0,
+  "os": "Windows 11",
+  "warrantyMonths": 12,
+  "stockQuantity": 10,
+  "lowStockThreshold": 3,
+  "active": true,
+  "imageUrls": [
+    "https://placehold.co/600x400?text=Postman"
+  ]
+}
+
+### Get product (admin)
+GET {{baseUrl}}/api/v1/admin/products/{{newProduct.response.body.$.data.id}} HTTP/1.1
+Authorization: Bearer {{loginAdmin.response.body.$.data.accessToken}}
+
+### Update product
+PUT {{baseUrl}}/api/v1/admin/products/{{newProduct.response.body.$.data.id}} HTTP/1.1
+Authorization: Bearer {{loginAdmin.response.body.$.data.accessToken}}
+Content-Type: {{json}}
+
+{
+  "sku": "HTTP-SKU-1",
+  "name": "Postman Test Laptop (updated)",
+  "description": "Created from the Postman collection",
+  "price": 899.99,
+  "categoryId": "1",
+  "brandId": "1",
+  "cpu": "Intel Core i7",
+  "ram": 16,
+  "storage": "512GB SSD",
+  "gpu": "Intel Iris Xe",
+  "screenSize": 14.0,
+  "os": "Windows 11",
+  "warrantyMonths": 12,
+  "stockQuantity": 12,
+  "lowStockThreshold": 3,
+  "active": true,
+  "imageUrls": [
+    "https://placehold.co/600x400?text=Postman"
+  ]
+}
+
+### Deactivate product
+PATCH {{baseUrl}}/api/v1/admin/products/{{newProduct.response.body.$.data.id}}/active?value=false HTTP/1.1
+Authorization: Bearer {{loginAdmin.response.body.$.data.accessToken}}
+
+### Activate product
+PATCH {{baseUrl}}/api/v1/admin/products/{{newProduct.response.body.$.data.id}}/active?value=true HTTP/1.1
+Authorization: Bearer {{loginAdmin.response.body.$.data.accessToken}}
+
+### Delete product
+DELETE {{baseUrl}}/api/v1/admin/products/{{newProduct.response.body.$.data.id}} HTTP/1.1
+Authorization: Bearer {{loginAdmin.response.body.$.data.accessToken}}
+
+### Create category (saves newCategoryId)
+# @name newCategory
+POST {{baseUrl}}/api/v1/admin/categories HTTP/1.1
+Authorization: Bearer {{loginAdmin.response.body.$.data.accessToken}}
+Content-Type: {{json}}
+
+{
+  "name": "Cat {{$timestamp}}",
+  "description": "Temp"
+}
+
+### Update category
+PUT {{baseUrl}}/api/v1/admin/categories/{{newCategory.response.body.$.data.id}} HTTP/1.1
+Authorization: Bearer {{loginAdmin.response.body.$.data.accessToken}}
+Content-Type: {{json}}
+
+{
+  "name": "Cat renamed {{$timestamp}}",
+  "description": "Temp 2"
+}
+
+### Delete category
+DELETE {{baseUrl}}/api/v1/admin/categories/{{newCategory.response.body.$.data.id}} HTTP/1.1
+Authorization: Bearer {{loginAdmin.response.body.$.data.accessToken}}
+
+### Create brand (saves newBrandId)
+# @name newBrand
+POST {{baseUrl}}/api/v1/admin/brands HTTP/1.1
+Authorization: Bearer {{loginAdmin.response.body.$.data.accessToken}}
+Content-Type: {{json}}
+
+{
+  "name": "Brand {{$timestamp}}"
+}
+
+### Update brand
+PUT {{baseUrl}}/api/v1/admin/brands/{{newBrand.response.body.$.data.id}} HTTP/1.1
+Authorization: Bearer {{loginAdmin.response.body.$.data.accessToken}}
+Content-Type: {{json}}
+
+{
+  "name": "Brand renamed {{$timestamp}}"
+}
+
+### Delete brand
+DELETE {{baseUrl}}/api/v1/admin/brands/{{newBrand.response.body.$.data.id}} HTTP/1.1
+Authorization: Bearer {{loginAdmin.response.body.$.data.accessToken}}
+
+
+###############################################################
+# 12 Admin - Orders & Payments
+###############################################################
+
+### List orders (filters)
+GET {{baseUrl}}/api/v1/admin/orders?status=DELIVERED&keyword=ECOM&page=0&size=20 HTTP/1.1
+Authorization: Bearer {{loginAdmin.response.body.$.data.accessToken}}
+
+### Get order detail
+GET {{baseUrl}}/api/v1/admin/orders/{{checkout1.response.body.$.data.orderNumber}} HTTP/1.1
+Authorization: Bearer {{loginAdmin.response.body.$.data.accessToken}}
+
+### List payments
+GET {{baseUrl}}/api/v1/admin/payments?status=PAID&page=0&size=20 HTTP/1.1
+Authorization: Bearer {{loginAdmin.response.body.$.data.accessToken}}
+
+### Refund payment
+POST {{baseUrl}}/api/v1/admin/payments/{{checkout1.response.body.$.data.payment.id}}/refund HTTP/1.1
+Authorization: Bearer {{loginAdmin.response.body.$.data.accessToken}}
+
+
+###############################################################
+# 13 Admin - Coupons
+###############################################################
+
+### List coupons
+GET {{baseUrl}}/api/v1/admin/coupons?page=0&size=20 HTTP/1.1
+Authorization: Bearer {{loginAdmin.response.body.$.data.accessToken}}
+
+### Create coupon (saves couponId)
+# @name newCoupon
+POST {{baseUrl}}/api/v1/admin/coupons HTTP/1.1
+Authorization: Bearer {{loginAdmin.response.body.$.data.accessToken}}
+Content-Type: {{json}}
+
+{
+  "code": "PM{{$timestamp}}",
+  "discountType": "PERCENT",
+  "value": 15,
+  "minOrderAmount": 100,
+  "maxUses": 50,
+  "startAt": "2026-01-01T00:00:00",
+  "endAt": "2030-12-31T23:59:59",
+  "active": true
+}
+
+### Update coupon
+PUT {{baseUrl}}/api/v1/admin/coupons/{{newCoupon.response.body.$.data.id}} HTTP/1.1
+Authorization: Bearer {{loginAdmin.response.body.$.data.accessToken}}
+Content-Type: {{json}}
+
+{
+  "code": "PMUPD{{$timestamp}}",
+  "discountType": "FIXED",
+  "value": 25,
+  "minOrderAmount": 200,
+  "maxUses": 10,
+  "active": true
+}
+
+### Delete coupon
+DELETE {{baseUrl}}/api/v1/admin/coupons/{{newCoupon.response.body.$.data.id}} HTTP/1.1
+Authorization: Bearer {{loginAdmin.response.body.$.data.accessToken}}
+
+
+###############################################################
+# 14 Admin - Inventory
+###############################################################
+
+### Inventory list
+GET {{baseUrl}}/api/v1/admin/inventory?page=0&size=20 HTTP/1.1
+Authorization: Bearer {{loginStaff.response.body.$.data.accessToken}}
+
+### Low-stock list
+GET {{baseUrl}}/api/v1/admin/inventory/low-stock HTTP/1.1
+Authorization: Bearer {{loginStaff.response.body.$.data.accessToken}}
+
+### Restock product
+POST {{baseUrl}}/api/v1/admin/inventory/{{products.response.body.$.data.content[0].id}}/restock HTTP/1.1
+Authorization: Bearer {{loginStaff.response.body.$.data.accessToken}}
+Content-Type: {{json}}
+
+{
+  "quantity": 10,
+  "note": "Supplier delivery PO-1001"
+}
+
+### Adjust stock (delta)
+POST {{baseUrl}}/api/v1/admin/inventory/{{products.response.body.$.data.content[0].id}}/adjust HTTP/1.1
+Authorization: Bearer {{loginStaff.response.body.$.data.accessToken}}
+Content-Type: {{json}}
+
+{
+  "delta": -1,
+  "note": "Damaged unit"
+}
+
+### Inventory logs
+GET {{baseUrl}}/api/v1/admin/inventory/{{products.response.body.$.data.content[0].id}}/logs?page=0&size=20 HTTP/1.1
+Authorization: Bearer {{loginStaff.response.body.$.data.accessToken}}
+
+
+###############################################################
+# 15 Admin - Reviews
+###############################################################
+
+### List all reviews
+GET {{baseUrl}}/api/v1/admin/reviews?page=0&size=20 HTTP/1.1
+Authorization: Bearer {{loginAdmin.response.body.$.data.accessToken}}
+
+### Hide review
+PATCH {{baseUrl}}/api/v1/admin/reviews/{{review.response.body.$.data.id}}/visibility HTTP/1.1
+Authorization: Bearer {{loginAdmin.response.body.$.data.accessToken}}
+Content-Type: {{json}}
+
+{
+  "visible": false
+}
+
+### Show review
+PATCH {{baseUrl}}/api/v1/admin/reviews/{{review.response.body.$.data.id}}/visibility HTTP/1.1
+Authorization: Bearer {{loginAdmin.response.body.$.data.accessToken}}
+Content-Type: {{json}}
+
+{
+  "visible": true
+}
+
+### Delete review
+DELETE {{baseUrl}}/api/v1/admin/reviews/{{review.response.body.$.data.id}} HTTP/1.1
+Authorization: Bearer {{loginAdmin.response.body.$.data.accessToken}}
+
+
+###############################################################
+# 16 Admin - Reports & Uploads
+###############################################################
+
+### Dashboard
+GET {{baseUrl}}/api/v1/admin/reports/dashboard HTTP/1.1
+Authorization: Bearer {{loginAdmin.response.body.$.data.accessToken}}
+
+### Sales report
+GET {{baseUrl}}/api/v1/admin/reports/sales?from=2026-01-01&to=2026-12-31 HTTP/1.1
+Authorization: Bearer {{loginAdmin.response.body.$.data.accessToken}}
+
+### Upload image (sample.png from the postman folder)
+POST {{baseUrl}}/api/v1/admin/uploads HTTP/1.1
+Authorization: Bearer {{loginAdmin.response.body.$.data.accessToken}}
+Content-Type: multipart/form-data; boundary=ecomBoundary
+
+--ecomBoundary
+Content-Disposition: form-data; name="file"; filename="photo.png"
+Content-Type: image/png
+
+< ./photo.png
+--ecomBoundary--
+

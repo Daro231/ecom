@@ -1,0 +1,35 @@
+package com.ecom.model.entity;
+
+import com.ecom.model.enumerate.*;
+import jakarta.persistence.*;
+import lombok.*;
+import org.hibernate.annotations.BatchSize;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
+@Entity
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+@Table(name = "inventory_logs")
+public class InventoryLog extends BaseEntity {
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "product_id")
+    private Product product;
+    @Column(nullable = false)
+    private int changeQuantity;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private InventoryReason reason;
+    @Column(nullable = false)
+    private int stockAfter;
+    private Long createdBy;
+    @Column(length = 500)
+    private String note;
+}

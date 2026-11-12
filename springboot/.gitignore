@@ -1,0 +1,16 @@
+target/
+uploads/
+.idea/
+*.iml
+.env
+
+# all env files except the example
+.env.*
+!.env.example
+
+# logs and test reports
+*.log
+newman/
+
+# editor
+.vscode/

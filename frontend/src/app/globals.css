@@ -1,0 +1,52 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 210 25% 98%;
+    --foreground: 215 45% 12%;
+    --card: 0 0% 100%;
+    --card-foreground: 215 45% 12%;
+    --primary: 25 100% 55%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 214 32% 94%;
+    --secondary-foreground: 215 45% 16%;
+    --muted: 214 32% 94%;
+    --muted-foreground: 215 16% 42%;
+    --accent: 25 100% 94%;
+    --accent-foreground: 20 80% 25%;
+    --destructive: 0 78% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 214 25% 87%;
+    --input: 214 25% 85%;
+    --ring: 25 100% 55%;
+  }
+  .dark {
+    --background: 216 50% 7%;
+    --foreground: 210 30% 96%;
+    --card: 216 45% 11%;
+    --card-foreground: 210 30% 96%;
+    --primary: 25 100% 55%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 216 35% 17%;
+    --secondary-foreground: 210 30% 96%;
+    --muted: 216 35% 17%;
+    --muted-foreground: 214 20% 68%;
+    --accent: 216 40% 20%;
+    --accent-foreground: 25 100% 80%;
+    --destructive: 0 70% 52%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 216 30% 22%;
+    --input: 216 30% 24%;
+    --ring: 25 100% 55%;
+  }
+  * { @apply border-border; }
+  body { @apply bg-background text-foreground antialiased; }
+}
+
+.leaflet-container { font: inherit; z-index: 0; }
+@media print {
+  .no-print { display: none !important; }
+  body { background: #fff !important; color: #000 !important; }
+}

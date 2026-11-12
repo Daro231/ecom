@@ -1,0 +1,7 @@
+# The datasource comes from the PostgreSQL Testcontainer (@ServiceConnection in AbstractIntegrationTest).
+spring:
+  jpa:
+    show-sql: false
+
+app:
+  upload-dir: ./target/test-uploads

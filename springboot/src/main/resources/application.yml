@@ -1,0 +1,70 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: ecom-backend
+  profiles:
+    default: dev
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 6MB
+  jackson:
+    default-property-inclusion: non_null
+  mvc:
+    throw-exception-if-no-handler-found: true
+  web:
+    resources:
+      add-mappings: false
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:ecom-dev-secret-key-change-me-0123456789-abcdefghijklmnop}
+    expiration-ms: 86400000
+  upload-dir: ./uploads
+  cors:
+    allowed-origins: http://localhost:3000
+    allow-all: false
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+  api-docs:
+    path: /v3/api-docs
+
+payment:
+  khqr:
+    mode: ${KHQR_MODE:mock}              # mock | bakong
+    expiry-minutes: 10
+    poll-interval-ms: 5000
+    expiry-grace-minutes: 5              # a QR is still checked / not failed this long after it expires
+    min-check-interval-seconds: 3        # at most one Bakong call per payment in this window
+    auto-cancel-minutes: ${KHQR_AUTO_CANCEL_MINUTES:30}  # unpaid KHQR orders are cancelled after this long (0 = never)
+    auto-cancel-check-interval-ms: 60000 # how often the auto-cancel job runs
+    late-payment-watch-hours: ${KHQR_LATE_PAYMENT_WATCH_HOURS:24}  # bakong mode: keep checking auto-cancelled orders this long (0 = off)
+    late-payment-check-interval-ms: 60000  # how often late payments are checked
+
+bakong:
+  base-url: ${BAKONG_BASE_URL:https://api-bakong.nbc.gov.kh}
+  token: ${BAKONG_TOKEN:}
+  account-id: ${BAKONG_ACCOUNT_ID:}      # e.g. yourname@bank
+  merchant-name: ${BAKONG_MERCHANT_NAME:ECOM Computer Store}
+  merchant-city: ${BAKONG_MERCHANT_CITY:Phnom Penh}
+  currency: ${BAKONG_CURRENCY:USD}       # USD or KHR
+  khr-per-usd: ${BAKONG_KHR_PER_USD:4100}  # only used when currency is KHR
+  store-label: ECOM
+  terminal-label: WEB
+  connect-timeout-ms: 5000
+  read-timeout-ms: 10000
